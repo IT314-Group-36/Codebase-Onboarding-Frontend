@@ -1,0 +1,45 @@
+.cv-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.cv-search__icon {
+  position: absolute;
+  left: 10px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.cv-search__input {
+  width: 100%;
+  padding: 6px 28px 6px 32px;
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  height: 32px;
+}
+
+.cv-search__input:focus {
+  border-color: var(--border-focus);
+  outline: none;
+}
+
+.cv-search__clear {
+  position: absolute;
+  right: 8px;
+  padding: 3px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-xs);
+}
+
+.cv-search__clear:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-surface-hover);
+}

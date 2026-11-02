@@ -1,0 +1,61 @@
+/* ===================================================
+   CODEVERSE — StatusBadge Component
+   =================================================== */
+
+.cv-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 7px;
+  border-radius: var(--radius-xs);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  border: 1px solid transparent;
+  user-select: none;
+  line-height: 1.4;
+}
+
+.cv-badge__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: currentColor;
+}
+
+.cv-badge--analyzed {
+  background-color: var(--status-success-subtle);
+  color: var(--status-success);
+  border-color: var(--status-success-border);
+}
+
+.cv-badge--analyzing {
+  background-color: var(--status-warning-subtle);
+  color: var(--status-warning);
+  border-color: var(--status-warning-border);
+}
+
+.cv-badge--connected {
+  background-color: rgba(164, 165, 170, 0.1);
+  color: var(--text-secondary);
+  border-color: var(--border-default);
+}
+
+.cv-badge--error {
+  background-color: var(--status-error-subtle);
+  color: var(--status-error);
+  border-color: var(--status-error-border);
+}
+
+.cv-badge--pending {
+  background-color: rgba(115, 119, 128, 0.12);
+  color: var(--text-muted);
+  border-color: var(--border-muted);
+}
+
+.cv-badge__pulse {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: var(--status-warning);
+}

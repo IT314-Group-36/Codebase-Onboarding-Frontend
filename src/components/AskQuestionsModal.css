@@ -1,0 +1,231 @@
+/* ===================================================
+   CODEVERSE — AskQuestionsModal (Liquid Chrome & Amber)
+   =================================================== */
+
+.cv-ask-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background-color: var(--overlay-bg);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: cv-fade-in 0.15s ease;
+}
+
+.cv-ask-modal {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  max-width: 580px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  max-height: 80vh;
+  box-shadow: var(--shadow-lg);
+  animation: cv-slide-up 0.18s ease;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Subtle metallic top highlight */
+.cv-ask-modal::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 173, 102, 0.15) 50%, rgba(255, 255, 255, 0.02) 100%);
+  pointer-events: none;
+}
+
+.cv-ask-modal__header {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border-default);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--bg-surface);
+}
+
+.cv-ask-modal__title-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cv-ask-modal__spark {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, #252830 0%, #1A1C21 100%);
+  border: 1px solid var(--border-subtle);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cv-ask-modal__title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.cv-ask-modal__sub {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.cv-ask-modal__close {
+  color: var(--text-muted);
+  padding: 4px;
+  border-radius: var(--radius-xs);
+  display: flex;
+}
+
+.cv-ask-modal__close:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-surface-hover);
+}
+
+.cv-ask-modal__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cv-ask-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 180px;
+}
+
+.cv-ask-msg {
+  display: flex;
+}
+
+.cv-ask-msg--user {
+  justify-content: flex-end;
+}
+
+.cv-ask-msg--assistant {
+  justify-content: flex-start;
+}
+
+.cv-ask-msg__bubble {
+  max-width: 85%;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.cv-ask-msg--user .cv-ask-msg__bubble {
+  background: var(--gradient-amber-btn);
+  color: var(--text-inverse);
+  font-weight: 500;
+  box-shadow: var(--shadow-sm);
+}
+
+.cv-ask-msg--assistant .cv-ask-msg__bubble {
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.cv-ask-msg__loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+}
+
+.cv-ask-msg__refs {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border-default);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.cv-ask-msg__refs-title {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  width: 100%;
+}
+
+.cv-ask-msg__file {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+.cv-ask-prompts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.cv-ask-prompts__label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.cv-ask-prompts__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cv-ask-prompt-chip {
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 4px 9px;
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+  transition: all var(--duration-fast) var(--ease-default);
+}
+
+.cv-ask-prompt-chip:hover {
+  border-color: var(--border-active);
+  color: var(--text-primary);
+  background-color: var(--bg-elevated-hover);
+}
+
+.cv-ask-modal__footer {
+  padding: 12px 20px;
+  border-top: 1px solid var(--border-default);
+  display: flex;
+  gap: 8px;
+  background-color: var(--bg-surface);
+}
+
+.cv-ask-input {
+  flex: 1;
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  padding: 8px 12px;
+  font-size: 0.85rem;
+}
+
+.cv-ask-input:focus {
+  border-color: var(--border-focus);
+  outline: none;
+}

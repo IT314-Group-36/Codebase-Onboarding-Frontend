@@ -1,0 +1,306 @@
+/* ===================================================
+   CODEVERSE — Connect Repository Page (Warm Graphite & Amber)
+   =================================================== */
+
+.cv-connect-page {
+  max-width: 620px;
+  margin: 0 auto;
+}
+
+.cv-connect-header {
+  margin-bottom: 18px;
+}
+
+.cv-connect-title {
+  font-size: 1.55rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.cv-connect-desc {
+  font-size: 0.86rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-top: 3px;
+}
+
+/* GitHub Status Box */
+.cv-connect-status-box {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 18px;
+  box-shadow: var(--shadow-sm);
+}
+
+.cv-connect-status-box__icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-xs);
+  background: linear-gradient(135deg, #25282E 0%, #1A1C20 100%);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cv-connect-status-box__body {
+  flex: 1;
+}
+
+.cv-connect-status-box__title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.cv-status-pill--demo {
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--status-warning);
+  background-color: var(--status-warning-subtle);
+  border: 1px solid var(--status-warning-border);
+  padding: 1px 6px;
+  border-radius: var(--radius-xs);
+}
+
+.cv-connect-status-box__note {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin-top: 2px;
+}
+
+/* Form Card */
+.cv-connect-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.cv-connect-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.cv-connect-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  gap: 3px;
+}
+
+.cv-connect-req {
+  color: var(--status-error);
+}
+
+.cv-connect-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.cv-connect-input-icon {
+  position: absolute;
+  left: 11px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.cv-connect-input,
+.cv-connect-select {
+  width: 100%;
+  padding: 7px 12px 7px 34px;
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 0.86rem;
+  height: 36px;
+  transition: border-color var(--duration-fast) var(--ease-default);
+}
+
+.cv-connect-input:focus,
+.cv-connect-select:focus {
+  border-color: var(--border-focus);
+}
+
+.cv-connect-input--error {
+  border-color: var(--status-error) !important;
+}
+
+.cv-connect-error-text {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--status-error);
+  font-size: 0.76rem;
+}
+
+.cv-connect-hint-text {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.cv-connect-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.cv-connect-simulate-error-btn {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  text-decoration: underline;
+  transition: color var(--duration-fast) var(--ease-default);
+}
+
+.cv-connect-simulate-error-btn:hover {
+  color: var(--text-secondary);
+}
+
+/* Stepper */
+.cv-connect-progress-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.cv-connect-progress-head h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.cv-connect-progress-head p {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.cv-connect-stepper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cv-step-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: var(--radius-xs);
+  color: var(--text-secondary);
+  border: 1px solid transparent;
+  transition: all var(--duration-fast) var(--ease-default);
+}
+
+.cv-step-row--active {
+  background-color: var(--bg-elevated);
+  border-color: var(--primary-border);
+  color: var(--primary);
+}
+
+.cv-step-row--done {
+  color: var(--status-success);
+}
+
+.cv-step-indicator {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cv-step-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--text-muted);
+}
+
+.cv-step-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--border-default);
+  border-top-color: var(--primary);
+  animation: cv-spin 0.7s linear infinite;
+}
+
+.cv-step-content {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.82rem;
+}
+
+.cv-step-status {
+  font-size: 0.72rem;
+  color: var(--primary);
+  font-weight: 500;
+}
+
+/* Result States */
+.cv-connect-card--success,
+.cv-connect-card--error {
+  text-align: center;
+  align-items: center;
+  padding: 32px 20px;
+}
+
+.cv-connect-result-icon--success {
+  color: var(--status-success);
+}
+
+.cv-connect-result-icon--error {
+  color: var(--status-error);
+}
+
+.cv-connect-card h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-top: 4px;
+}
+
+.cv-connect-result-desc {
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+  max-width: 460px;
+  line-height: 1.5;
+}
+
+.cv-connect-result-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 10px;
+}

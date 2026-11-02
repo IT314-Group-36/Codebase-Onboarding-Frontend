@@ -1,0 +1,301 @@
+/* ===================================================
+   CODEVERSE — Topbar Component (Warm Graphite & Amber)
+   =================================================== */
+
+.cv-topbar {
+  height: var(--topbar-height);
+  background-color: var(--bg-header);
+  border-bottom: 1px solid var(--border-default);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.cv-topbar__left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cv-topbar__menu-toggle {
+  display: none;
+  padding: 6px;
+  color: var(--text-secondary);
+  border-radius: var(--radius-xs);
+  transition: all var(--duration-fast) var(--ease-default);
+}
+
+.cv-topbar__menu-toggle:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-surface-hover);
+}
+
+.cv-topbar__breadcrumbs {
+  display: flex;
+  align-items: center;
+  font-size: 0.84rem;
+}
+
+.cv-topbar__crumb-item {
+  display: inline-flex;
+  align-items: center;
+}
+
+.cv-topbar__crumb-sep {
+  color: var(--text-muted);
+  margin: 0 6px;
+}
+
+.cv-topbar__crumb-link {
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color var(--duration-fast) var(--ease-default);
+}
+
+.cv-topbar__crumb-link:hover {
+  color: var(--text-primary);
+}
+
+.cv-topbar__crumb-current {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.cv-topbar__right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cv-topbar__action-wrapper {
+  position: relative;
+}
+
+.cv-topbar__icon-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background-color: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: all var(--duration-fast) var(--ease-default);
+}
+
+.cv-topbar__icon-btn:hover,
+.cv-topbar__icon-btn--active {
+  color: var(--text-primary);
+  border-color: var(--border-default);
+  background-color: var(--bg-surface-hover);
+}
+
+.cv-topbar__unread-dot {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: var(--primary);
+}
+
+.cv-topbar__profile-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 8px 3px 4px;
+  background-color: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  transition: all var(--duration-fast) var(--ease-default);
+}
+
+.cv-topbar__profile-btn:hover {
+  border-color: var(--border-default);
+  background-color: var(--bg-surface-hover);
+}
+
+.cv-topbar__avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-xs);
+  background: linear-gradient(135deg, #2B2E35 0%, #1A1C20 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  font-size: 0.72rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cv-topbar__user-info {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.cv-topbar__user-name {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.cv-topbar__user-plan {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+/* Dropdowns */
+.cv-topbar__dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 260px;
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 8px;
+  animation: cv-slide-up 0.14s ease;
+  z-index: 200;
+}
+
+.cv-topbar__dropdown--notif {
+  width: 300px;
+}
+
+.cv-topbar__dropdown-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 6px 8px;
+  border-bottom: 1px solid var(--border-default);
+}
+
+.cv-topbar__dropdown-head h4 {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.cv-topbar__notif-list {
+  list-style: none;
+  padding: 6px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cv-topbar__notif-item {
+  display: flex;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: var(--radius-xs);
+  transition: background-color var(--duration-fast) var(--ease-default);
+}
+
+.cv-topbar__notif-item:hover {
+  background-color: var(--bg-surface-hover);
+}
+
+.cv-topbar__notif-point {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: var(--primary);
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+
+.cv-topbar__notif-text {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.cv-topbar__notif-time {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+.cv-topbar__profile-card {
+  padding: 6px 8px 8px;
+}
+
+.cv-topbar__profile-name {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.cv-topbar__profile-email {
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+}
+
+.cv-topbar__github-tag {
+  display: inline-block;
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  padding: 1px 6px;
+  border-radius: var(--radius-xs);
+  margin-top: 4px;
+}
+
+.cv-topbar__dropdown-divider {
+  height: 1px;
+  background-color: var(--border-default);
+  margin: 6px 0;
+}
+
+.cv-topbar__menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: var(--radius-xs);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  text-align: left;
+  transition: all var(--duration-fast) var(--ease-default);
+}
+
+.cv-topbar__menu-item:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-surface-hover);
+}
+
+.cv-topbar__menu-item--danger {
+  color: var(--status-error);
+}
+
+.cv-topbar__menu-item--danger:hover {
+  color: #FFFFFF;
+  background-color: var(--status-error);
+}
+
+@media (max-width: 900px) {
+  .cv-topbar {
+    padding: 0 16px;
+  }
+
+  .cv-topbar__menu-toggle {
+    display: flex;
+  }
+
+  .cv-topbar__user-info {
+    display: none;
+  }
+}
