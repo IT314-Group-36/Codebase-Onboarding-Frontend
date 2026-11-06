@@ -284,6 +284,10 @@ export default function ExplorerPage() {
               {getFileIcon(selectedFileId)}
               <span className="cv-code-head__path">{selectedFileId}</span>
               <span className="cv-code-head__lines">{codeLines.length} lines</span>
+              <span className="cv-code-spatial-pill">
+                <span className="cv-code-spatial-dot" />
+                AST Live
+              </span>
             </div>
 
             <div className="cv-code-head__actions">

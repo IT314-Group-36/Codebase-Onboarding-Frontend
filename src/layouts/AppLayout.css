@@ -3,6 +3,7 @@
   display: flex;
   position: relative;
   z-index: 1;
+  background-color: #02060F;
 }
 
 .cv-app-shell__body {
@@ -14,6 +15,7 @@
   transition: margin-left var(--duration-normal) var(--ease-default);
   position: relative;
   z-index: 2;
+  background-color: transparent;
 }
 
 .cv-app-shell--collapsed .cv-app-shell__body {
@@ -24,6 +26,7 @@
   flex: 1;
   padding: 24px 32px 48px;
   overflow-y: auto;
+  position: relative;
 }
 
 @media (max-width: 900px) {

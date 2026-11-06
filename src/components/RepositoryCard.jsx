@@ -18,7 +18,7 @@ export default function RepositoryCard({ repo }) {
     Python: '#E7B45A',     // Warning/gold
     Dart: '#E8853D',       // Deep amber-orange
     Rust: '#DE7C5A',       // Terracotta
-    Go: '#43C59E',         // Success sage
+    Go: '#34D399',         // Success sage
   };
 
   const handleOpen = () => {

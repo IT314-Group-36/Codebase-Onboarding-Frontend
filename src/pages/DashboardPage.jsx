@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   GitBranch,
@@ -18,6 +18,7 @@ import SearchInput from '../components/SearchInput';
 import EmptyState from '../components/EmptyState';
 import LoadingState from '../components/LoadingState';
 import Button from '../components/Button';
+const LiquidChromeOrb = lazy(() => import('../components/3d/LiquidChromeOrb'));
 import {
   sampleRepositories,
   dashboardStats,
@@ -87,16 +88,29 @@ export default function DashboardPage() {
     <div className="cv-dashboard">
       {/* Top Header & Primary Action */}
       <section className="cv-dashboard-header">
-        <div className="cv-dashboard-header__copy">
-          <div className="cv-dashboard-header__title-row">
-            <h1 className="cv-dashboard-title">Dashboard</h1>
-            <span className="cv-dashboard-user-pill">
-              {sampleUser.name} · {sampleUser.plan}
-            </span>
+        <div className="cv-dashboard-header__left">
+          <div className="cv-dashboard-header__copy">
+            <div className="cv-dashboard-header__title-row">
+              <h1 className="cv-dashboard-title">Dashboard</h1>
+              <span className="cv-dashboard-user-pill">
+                {sampleUser.name} · {sampleUser.plan}
+              </span>
+            </div>
+            <p className="cv-dashboard-subtitle">
+              Overview of connected repositories, AST analysis status, and onboarding milestones.
+            </p>
           </div>
-          <p className="cv-dashboard-subtitle">
-            Overview of connected repositories, AST analysis status, and onboarding milestones.
-          </p>
+        </div>
+
+        {/* Signature 3D Liquid Chrome Core Visual */}
+        <div className="cv-dashboard-signature-visual" title="CODEVERSE Core · Real-time AST Engine Pulse">
+          <Suspense fallback={<div style={{ width: 68, height: 68 }} />}>
+            <LiquidChromeOrb size={68} label="Liquid Chrome Codebase Core" />
+          </Suspense>
+          <div className="cv-dashboard-signature-info">
+            <span className="cv-dashboard-signature-tag">CORE ACTIVE</span>
+            <span className="cv-dashboard-signature-name">AST Engine</span>
+          </div>
         </div>
 
         <div className="cv-dashboard-header__actions">

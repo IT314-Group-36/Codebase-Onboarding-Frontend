@@ -1,54 +1,58 @@
 /* ===================================================
-   CODEVERSE — Connect Repository Page (Warm Graphite & Amber)
+   CODEVERSE — Connect Repository Page (Dark Aurora UI)
    =================================================== */
 
 .cv-connect-page {
-  max-width: 620px;
+  max-width: 640px;
   margin: 0 auto;
+  position: relative;
+  z-index: 2;
 }
 
 .cv-connect-header {
-  margin-bottom: 18px;
+  margin-bottom: 20px;
 }
 
 .cv-connect-title {
-  font-size: 1.55rem;
+  font-size: 1.65rem;
   font-weight: 700;
-  color: var(--text-primary);
+  color: #FFFFFF;
   letter-spacing: -0.02em;
 }
 
 .cv-connect-desc {
-  font-size: 0.86rem;
-  color: var(--text-secondary);
+  font-size: 0.88rem;
+  color: #9AA7BD;
   line-height: 1.5;
-  margin-top: 3px;
+  margin-top: 4px;
 }
 
 /* GitHub Status Box */
 .cv-connect-status-box {
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-default);
+  background: linear-gradient(135deg, rgba(14, 46, 102, 0.35) 0%, rgba(7, 18, 38, 0.85) 100%);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(76, 154, 255, 0.24);
   border-radius: var(--radius-sm);
-  padding: 12px 14px;
+  padding: 14px 16px;
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 18px;
-  box-shadow: var(--shadow-sm);
+  gap: 14px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 18px rgba(2, 6, 15, 0.6);
 }
 
 .cv-connect-status-box__icon {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border-radius: var(--radius-xs);
-  background: linear-gradient(135deg, #25282E 0%, #1A1C20 100%);
-  border: 1px solid var(--border-subtle);
-  color: var(--text-secondary);
+  background: linear-gradient(135deg, #0E2E66 0%, #071226 100%);
+  border: 1px solid rgba(76, 154, 255, 0.3);
+  color: #4C9AFF;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  box-shadow: 0 0 10px rgba(31, 111, 235, 0.25);
 }
 
 .cv-connect-status-box__body {
@@ -58,59 +62,62 @@
 .cv-connect-status-box__title-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.84rem;
+  gap: 10px;
+  font-size: 0.86rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: #FFFFFF;
 }
 
 .cv-status-pill--demo {
   font-size: 0.68rem;
   font-weight: 500;
-  color: var(--status-warning);
-  background-color: var(--status-warning-subtle);
-  border: 1px solid var(--status-warning-border);
-  padding: 1px 6px;
+  color: #F5A524;
+  background-color: rgba(245, 165, 36, 0.14);
+  border: 1px solid rgba(245, 165, 36, 0.35);
+  padding: 1px 7px;
   border-radius: var(--radius-xs);
+  font-family: var(--font-mono);
 }
 
 .cv-connect-status-box__note {
   font-size: 0.76rem;
-  color: var(--text-muted);
-  line-height: 1.4;
-  margin-top: 2px;
+  color: #9AA7BD;
+  line-height: 1.45;
+  margin-top: 3px;
 }
 
 /* Form Card */
 .cv-connect-card {
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-default);
+  background: linear-gradient(180deg, rgba(11, 26, 51, 0.8) 0%, rgba(7, 18, 38, 0.92) 100%);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(76, 154, 255, 0.22);
   border-radius: var(--radius-md);
-  padding: 22px 24px;
+  padding: 24px 26px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
   position: relative;
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 8px 28px rgba(2, 6, 15, 0.7);
 }
 
 .cv-connect-field {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
 }
 
 .cv-connect-label {
   font-size: 0.82rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: #FFFFFF;
   display: flex;
-  gap: 3px;
+  gap: 4px;
 }
 
 .cv-connect-req {
-  color: var(--status-error);
+  color: #F07171;
 }
 
 .cv-connect-input-wrap {
@@ -122,43 +129,46 @@
 .cv-connect-input-icon {
   position: absolute;
   left: 11px;
-  color: var(--text-muted);
+  color: #9AA7BD;
   pointer-events: none;
 }
 
 .cv-connect-input,
 .cv-connect-select {
   width: 100%;
-  padding: 7px 12px 7px 34px;
-  background-color: var(--bg-input);
-  border: 1px solid var(--border-default);
+  padding: 8px 12px 8px 36px;
+  background-color: #050D1D;
+  border: 1px solid rgba(76, 154, 255, 0.22);
   border-radius: var(--radius-sm);
-  color: var(--text-primary);
+  color: #FFFFFF;
   font-size: 0.86rem;
-  height: 36px;
-  transition: border-color var(--duration-fast) var(--ease-default);
+  height: 38px;
+  transition: all var(--duration-fast) var(--ease-default);
 }
 
 .cv-connect-input:focus,
 .cv-connect-select:focus {
-  border-color: var(--border-focus);
+  border-color: #1F6FEB;
+  box-shadow: 0 0 12px rgba(31, 111, 235, 0.35);
+  outline: none;
 }
 
 .cv-connect-input--error {
-  border-color: var(--status-error) !important;
+  border-color: #F07171 !important;
+  box-shadow: 0 0 10px rgba(240, 113, 113, 0.25) !important;
 }
 
 .cv-connect-error-text {
   display: flex;
   align-items: center;
   gap: 5px;
-  color: var(--status-error);
+  color: #F07171;
   font-size: 0.76rem;
 }
 
 .cv-connect-hint-text {
   font-size: 0.74rem;
-  color: var(--text-muted);
+  color: #9AA7BD;
 }
 
 .cv-connect-actions {
@@ -166,19 +176,20 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding-top: 10px;
-  border-top: 1px solid var(--border-subtle);
+  padding-top: 14px;
+  border-top: 1px solid rgba(76, 154, 255, 0.16);
 }
 
 .cv-connect-simulate-error-btn {
   font-size: 0.74rem;
-  color: var(--text-muted);
+  color: #9AA7BD;
   text-decoration: underline;
+  cursor: pointer;
   transition: color var(--duration-fast) var(--ease-default);
 }
 
 .cv-connect-simulate-error-btn:hover {
-  color: var(--text-secondary);
+  color: #F5A524;
 }
 
 /* Stepper */
@@ -186,46 +197,48 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(76, 154, 255, 0.16);
 }
 
 .cv-connect-progress-head h3 {
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: #FFFFFF;
+  margin: 0;
 }
 
 .cv-connect-progress-head p {
   font-size: 0.78rem;
-  color: var(--text-muted);
+  color: #9AA7BD;
+  margin: 2px 0 0;
 }
 
 .cv-connect-stepper {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .cv-step-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
+  gap: 12px;
+  padding: 9px 14px;
   border-radius: var(--radius-xs);
-  color: var(--text-secondary);
+  color: #9AA7BD;
   border: 1px solid transparent;
   transition: all var(--duration-fast) var(--ease-default);
 }
 
 .cv-step-row--active {
-  background-color: var(--bg-elevated);
-  border-color: var(--primary-border);
-  color: var(--primary);
+  background-color: rgba(31, 111, 235, 0.16);
+  border-color: rgba(76, 154, 255, 0.32);
+  color: #FFFFFF;
 }
 
 .cv-step-row--done {
-  color: var(--status-success);
+  color: #34D399;
 }
 
 .cv-step-indicator {
@@ -241,15 +254,15 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background-color: var(--text-muted);
+  background-color: rgba(76, 154, 255, 0.3);
 }
 
 .cv-step-spinner {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  border: 2px solid var(--border-default);
-  border-top-color: var(--primary);
+  border: 2px solid rgba(76, 154, 255, 0.25);
+  border-top-color: #F5A524;
   animation: cv-spin 0.7s linear infinite;
 }
 
@@ -258,13 +271,14 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.82rem;
+  font-size: 0.84rem;
 }
 
 .cv-step-status {
   font-size: 0.72rem;
-  color: var(--primary);
-  font-weight: 500;
+  color: #F5A524;
+  font-weight: 600;
+  font-family: var(--font-mono);
 }
 
 /* Result States */
@@ -272,35 +286,35 @@
 .cv-connect-card--error {
   text-align: center;
   align-items: center;
-  padding: 32px 20px;
+  padding: 36px 24px;
 }
 
 .cv-connect-result-icon--success {
-  color: var(--status-success);
+  color: #34D399;
 }
 
 .cv-connect-result-icon--error {
-  color: var(--status-error);
+  color: #F07171;
 }
 
 .cv-connect-card h2 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-top: 4px;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin-top: 6px;
 }
 
 .cv-connect-result-desc {
-  font-size: 0.84rem;
-  color: var(--text-secondary);
+  font-size: 0.86rem;
+  color: #9AA7BD;
   max-width: 460px;
   line-height: 1.5;
 }
 
 .cv-connect-result-buttons {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
   justify-content: center;
-  margin-top: 10px;
+  margin-top: 14px;
 }

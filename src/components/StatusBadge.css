@@ -1,16 +1,16 @@
 /* ===================================================
-   CODEVERSE — StatusBadge Component
+   CODEVERSE — StatusBadge Component (Dark Aurora UI)
    =================================================== */
 
 .cv-badge {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 2px 7px;
+  padding: 2px 8px;
   border-radius: var(--radius-xs);
   font-size: 0.72rem;
   font-weight: 500;
-  letter-spacing: 0.01em;
+  font-family: var(--font-mono);
   border: 1px solid transparent;
   user-select: none;
   line-height: 1.4;
@@ -24,38 +24,50 @@
 }
 
 .cv-badge--analyzed {
-  background-color: var(--status-success-subtle);
-  color: var(--status-success);
-  border-color: var(--status-success-border);
+  background-color: rgba(67, 197, 158, 0.12);
+  color: #34D399;
+  border-color: rgba(67, 197, 158, 0.28);
 }
 
 .cv-badge--analyzing {
-  background-color: var(--status-warning-subtle);
-  color: var(--status-warning);
-  border-color: var(--status-warning-border);
+  background-color: rgba(245, 165, 36, 0.14);
+  color: #F5A524;
+  border-color: rgba(245, 165, 36, 0.35);
 }
 
 .cv-badge--connected {
-  background-color: rgba(164, 165, 170, 0.1);
-  color: var(--text-secondary);
-  border-color: var(--border-default);
+  background-color: rgba(31, 111, 235, 0.14);
+  color: #4C9AFF;
+  border-color: rgba(76, 154, 255, 0.25);
 }
 
 .cv-badge--error {
-  background-color: var(--status-error-subtle);
-  color: var(--status-error);
-  border-color: var(--status-error-border);
+  background-color: rgba(240, 113, 113, 0.14);
+  color: #F07171;
+  border-color: rgba(240, 113, 113, 0.30);
 }
 
 .cv-badge--pending {
-  background-color: rgba(115, 119, 128, 0.12);
-  color: var(--text-muted);
-  border-color: var(--border-muted);
+  background-color: rgba(133, 139, 152, 0.12);
+  color: #9AA7BD;
+  border-color: rgba(76, 154, 255, 0.18);
 }
 
 .cv-badge__pulse {
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background-color: var(--status-warning);
+  background-color: #F5A524;
+  animation: cvBadgePulse 1.8s ease-in-out infinite;
+}
+
+@keyframes cvBadgePulse {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
 }
