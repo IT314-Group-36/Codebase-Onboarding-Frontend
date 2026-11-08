@@ -240,8 +240,8 @@ export default function OnboardingPage() {
 
   const effectiveRepo = repo || {
     id: repoId,
-    name: 'react-dashboard',
-    owner: 'alexrivera',
+    name: `Repository ${repoId}`,
+    owner: 'GitHub',
     branch: 'main',
   };
 

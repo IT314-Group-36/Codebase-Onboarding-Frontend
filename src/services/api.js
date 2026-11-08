@@ -1,377 +1,492 @@
-// ============================================
-// CODEVERSE — API & Service Integration Layer
-// Provides production-ready API client structure with backend integration hooks
-// and robust fallback simulation for local demo mode.
-// ============================================
+/**
+ * CODEVERSE — API Client Layer
+ *
+ * Connects frontend views to the FastAPI backend at /api (proxied to http://localhost:8000).
+ * Handles response normalization, robust error extraction for FastAPI Pydantic details,
+ * and data adaptation.
+ */
 
 import {
-  sampleRepositories,
-  sampleUser,
-  sampleFileTree,
-  sampleFileContent,
-  sampleFileDetails,
-  sampleModuleRelationships,
-  sampleOnboardingTasks,
-} from '../data/sampleData';
+  adaptRepository,
+  buildFileTree,
+  adaptFileDetails,
+  generateOnboardingTasks,
+  saveTaskStatus,
+} from './adapters';
+import { sampleUser } from '../data/sampleData';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
-const SIMULATION_DELAY = 450;
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
-function sleep(ms = SIMULATION_DELAY) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function getStoredToken() {
+/**
+ * Extracts a readable error message from a FastAPI response
+ */
+async function parseError(response) {
+  let detailMessage = '';
   try {
-    return localStorage.getItem('codeverse_token') || '';
+    const errorBody = await response.json();
+    if (errorBody && errorBody.detail) {
+      if (typeof errorBody.detail === 'string') {
+        detailMessage = errorBody.detail;
+      } else if (Array.isArray(errorBody.detail)) {
+        // Pydantic validation error list
+        detailMessage = errorBody.detail
+          .map((err) => `${err.loc ? err.loc.join('.') + ': ' : ''}${err.msg || 'Invalid field'}`)
+          .join('; ');
+      } else if (typeof errorBody.detail === 'object') {
+        detailMessage =
+          errorBody.detail.message || JSON.stringify(errorBody.detail);
+      }
+    } else if (errorBody && errorBody.message) {
+      detailMessage = errorBody.message;
+    }
   } catch {
-    return '';
+    // If not JSON, try text
+    detailMessage = await response.text().catch(() => '');
   }
+
+  if (response.status === 409) {
+    return new Error(
+      detailMessage ||
+        'Repository is not ready for this operation or indexing is already in progress (HTTP 409).'
+    );
+  }
+  if (response.status === 404) {
+    return new Error(detailMessage || 'Requested resource not found (HTTP 404).');
+  }
+  if (response.status === 422) {
+    return new Error(
+      detailMessage || 'Invalid request payload or URL format (HTTP 422).'
+    );
+  }
+  if (response.status === 503) {
+    return new Error(
+      detailMessage ||
+        'LLM is not configured on the backend (LLM_API_KEY). Code search, file explorer, and dependency maps are available without it.'
+    );
+  }
+  if (response.status === 502) {
+    return new Error(
+      detailMessage ||
+        'The backend AI provider call failed (rate limit or timeout).'
+    );
+  }
+
+  return new Error(
+    detailMessage || `Backend request failed: ${response.status} ${response.statusText}`
+  );
 }
 
 /**
- * Standard fetch wrapper that attaches Authorization header if token exists.
+ * Core HTTP fetch wrapper
  */
-async function request(endpoint, options = {}) {
-  if (!BASE_URL) {
-    // If no real backend URL is configured, let callers fall back to simulation
-    throw new Error('BACKEND_UNAVAILABLE');
-  }
-
-  const token = getStoredToken();
+export async function request(endpoint, options = {}) {
   const headers = {
     'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...options.headers,
   };
 
-  const response = await fetch(`${BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  const url = `${BASE_URL}${endpoint}`;
+
+  let response;
+  try {
+    response = await fetch(url, {
+      ...options,
+      headers,
+    });
+  } catch (err) {
+    throw new Error(
+      `Unable to communicate with backend server at ${BASE_URL}. Ensure FastAPI is running on http://localhost:8000 (${err.message})`,
+      { cause: err }
+    );
+  }
 
   if (!response.ok) {
-    const errorBody = await response.json().catch(() => ({}));
-    throw new Error(errorBody.message || `API error: ${response.status} ${response.statusText}`);
+    const error = await parseError(response);
+    throw error;
+  }
+
+  // Handle 204 No Content
+  if (response.status === 204) {
+    return null;
   }
 
   return response.json();
 }
 
-/**
- * Simulates or executes user login via GitHub OAuth.
- * Endpoint: GET /api/v1/auth/github or POST /api/v1/auth/callback
- */
-export async function loginWithGitHub(shouldFail = false) {
-  try {
-    return await request('/api/v1/auth/github');
-  } catch {
-    await sleep(900);
-    if (shouldFail) {
-      throw new Error('Simulated authentication network timeout. Please retry.');
-    }
-    return {
-      success: true,
-      user: sampleUser,
-      token: 'mock-jwt-token-codeverse-demo',
-      isDemo: true,
-    };
-  }
+// ============================================
+// HEALTH CHECK
+// ============================================
+export async function checkHealth() {
+  return request('/health');
 }
 
-/**
- * Simulates or executes user logout.
- * Endpoint: POST /api/v1/auth/logout
- */
+// ============================================
+// AUTHENTICATION (Frontend Session)
+// ============================================
+// The backend does not implement auth tables or JWT tokens.
+// These methods manage a clean local developer session.
+
+export async function loginWithGitHub() {
+  return {
+    success: true,
+    user: sampleUser,
+    token: 'local-dev-session-token',
+    isLocalSession: true,
+  };
+}
+
 export async function logout() {
-  try {
-    return await request('/api/v1/auth/logout', { method: 'POST' });
-  } catch {
-    await sleep(250);
-    return { success: true };
-  }
+  return { success: true };
 }
 
-/**
- * Fetches user profile.
- * Endpoint: GET /api/v1/user/profile
- */
 export async function getUserProfile() {
-  try {
-    return await request('/api/v1/user/profile');
-  } catch {
-    await sleep(250);
-    return { success: true, user: sampleUser, isDemo: true };
-  }
+  return {
+    success: true,
+    user: sampleUser,
+    isLocalSession: true,
+  };
 }
 
-/**
- * Connects and queues a repository for AST ingestion.
- * Endpoint: POST /api/v1/repositories
- */
-export async function connectRepository(url, branch) {
-  const cleanUrl = url.trim();
-  const match = cleanUrl.match(/^https?:\/\/(?:www\.)?github\.com\/([^/\s]+)\/([^/\s]+)/);
+// ============================================
+// REPOSITORIES
+// ============================================
 
+/**
+ * Registers a new GitHub repository for indexing
+ * POST /repos -> 202 Accepted
+ */
+export async function connectRepository(url, branch = '', accessToken = null) {
+  const cleanUrl = (url || '').trim();
+
+  // Validate GitHub URL
+  const match = cleanUrl.match(
+    /^https?:\/\/(?:www\.)?github\.com\/([^/\s]+)\/([^/\s]+)/
+  );
   if (!match) {
     return {
       success: false,
-      error: 'Invalid GitHub URL format. Please provide a URL like https://github.com/owner/repository',
+      error:
+        'Invalid GitHub URL. Must be in the format: https://github.com/owner/repository',
     };
   }
 
   try {
-    return await request('/api/v1/repositories', {
+    const rawRepo = await request('/repos', {
       method: 'POST',
-      body: JSON.stringify({ url: cleanUrl, branch }),
+      body: JSON.stringify({
+        url: cleanUrl,
+        branch: (branch || '').trim(),
+        access_token: accessToken ? accessToken.trim() : null,
+      }),
     });
-  } catch {
-    await sleep(1200);
-    const owner = match[1];
-    const repoName = match[2].replace(/\.git$/, '');
 
-    const newRepo = {
-      id: `repo-${Date.now()}`,
-      name: repoName,
-      owner,
-      fullName: `${owner}/${repoName}`,
-      description: 'Repository connected via Codeverse interface.',
-      language: 'JavaScript',
-      languages: { JavaScript: 75, TypeScript: 15, CSS: 10 },
-      branch: branch || 'main',
-      branches: [branch || 'main', 'develop'],
-      stars: 12,
-      forks: 2,
-      status: 'analyzed',
-      connectedAt: new Date().toISOString(),
-      analyzedAt: new Date().toISOString(),
-      stats: { files: 42, modules: 6, functions: 98, components: 14 },
-      technologies: ['React', 'JavaScript', 'Vite'],
-      defaultFile: 'src/App.jsx',
-    };
-
+    const adapted = adaptRepository(rawRepo);
     return {
       success: true,
-      repository: newRepo,
-      isDemo: true,
+      repository: adapted,
+      raw: rawRepo,
+    };
+  } catch (err) {
+    return {
+      success: false,
+      error: err.message,
     };
   }
 }
 
 /**
- * Fetches connected repositories list.
- * Endpoint: GET /api/v1/repositories
+ * Lists all registered repositories from backend
+ * GET /repos
  */
 export async function getRepositories() {
-  try {
-    return await request('/api/v1/repositories');
-  } catch {
-    await sleep(300);
-    return { success: true, repositories: sampleRepositories, isDemo: true };
-  }
+  const rawList = await request('/repos');
+  const adapted = (rawList || []).map(adaptRepository);
+  return {
+    success: true,
+    repositories: adapted,
+    raw: rawList,
+  };
 }
 
 /**
- * Fetches single repository by ID.
- * Endpoint: GET /api/v1/repositories/:repoId
+ * Fetches repository detail by ID
+ * GET /repos/{repo_id}
  */
 export async function getRepositoryById(repoId) {
-  try {
-    return await request(`/api/v1/repositories/${encodeURIComponent(repoId)}`);
-  } catch {
-    await sleep(300);
-    const repo = sampleRepositories.find((r) => r.id === repoId) || sampleRepositories[0];
-    return { success: true, repository: repo, isDemo: true };
-  }
+  const numericId = parseInt(repoId, 10);
+  const targetId = Number.isNaN(numericId) ? repoId : numericId;
+
+  const rawRepo = await request(`/repos/${encodeURIComponent(targetId)}`);
+  const adapted = adaptRepository(rawRepo);
+  return {
+    success: true,
+    repository: adapted,
+    raw: rawRepo,
+  };
 }
 
 /**
- * Fetches file hierarchy tree.
- * Endpoint: GET /api/v1/repositories/:repoId/tree
+ * Reindexes an existing repository
+ * POST /repos/{repo_id}/reindex
  */
-export async function getFileTree(repoId) {
-  try {
-    return await request(`/api/v1/repositories/${encodeURIComponent(repoId)}/tree`);
-  } catch {
-    await sleep(300);
-    return { success: true, tree: sampleFileTree, isDemo: true };
-  }
+export async function reindexRepository(repoId, accessToken = null) {
+  const numericId = parseInt(repoId, 10);
+  const targetId = Number.isNaN(numericId) ? repoId : numericId;
+
+  const rawRepo = await request(`/repos/${encodeURIComponent(targetId)}/reindex`, {
+    method: 'POST',
+    body: JSON.stringify({
+      access_token: accessToken ? accessToken.trim() : null,
+    }),
+  });
+  return {
+    success: true,
+    repository: adaptRepository(rawRepo),
+    raw: rawRepo,
+  };
 }
 
 /**
- * Fetches source code content for a file path.
- * Endpoint: GET /api/v1/repositories/:repoId/file?path=:filePath
- */
-export async function getFileContent(repoId, filePath) {
-  try {
-    return await request(
-      `/api/v1/repositories/${encodeURIComponent(repoId)}/file?path=${encodeURIComponent(filePath)}`
-    );
-  } catch {
-    await sleep(250);
-    const fallback = `// Source code for ${filePath} (${repoId})
-// Demo preview content loaded from local fixtures.`;
-    const content = sampleFileContent[filePath] || fallback;
-    return { success: true, content, isDemo: true };
-  }
-}
-
-/**
- * Fetches file AST details, exported symbols, and dependencies.
- * Endpoint: GET /api/v1/repositories/:repoId/insights?path=:filePath
- */
-export async function getFileDetails(repoId, filePath) {
-  try {
-    return await request(
-      `/api/v1/repositories/${encodeURIComponent(repoId)}/insights?path=${encodeURIComponent(filePath)}`
-    );
-  } catch {
-    await sleep(250);
-    const details = sampleFileDetails[filePath] || {
-      purpose: `Utility module providing functionality for ${filePath}.`,
-      importance: 'medium',
-      complexity: 'medium',
-      dependencies: ['React', 'Lucide Icons'],
-      dependents: ['Parent Application Layer'],
-      exports: ['Default Export Interface'],
-      suggestions: [
-        'Document exported interfaces with clean JSDoc comments',
-        'Verify test coverage for edge error conditions',
-      ],
-    };
-    return { success: true, details, isDemo: true };
-  }
-}
-
-/**
- * Fetches the module dependency graph for a repository.
- * Endpoint: GET /api/v1/repositories/:repoId/dependency-graph
- */
-export async function getDependencyGraph(repoId) {
-  try {
-    return await request(`/api/v1/repositories/${encodeURIComponent(repoId)}/dependency-graph`);
-  } catch {
-    await sleep(350);
-
-    // Derived high-fidelity nodes from relationships & file tree
-    const nodes = [
-      { id: 'App.jsx', name: 'App.jsx', type: 'entrypoint', layer: 'Entrypoint', lines: 35, path: 'src/App.jsx' },
-      { id: 'Header.jsx', name: 'Header.jsx', type: 'component', layer: 'UI Component', lines: 85, path: 'src/components/Header.jsx' },
-      { id: 'Sidebar.jsx', name: 'Sidebar.jsx', type: 'component', layer: 'UI Component', lines: 112, path: 'src/components/Sidebar.jsx' },
-      { id: 'Dashboard.jsx', name: 'Dashboard.jsx', type: 'page', layer: 'UI Component', lines: 180, path: 'src/pages/Dashboard.jsx' },
-      { id: 'Analytics.jsx', name: 'Analytics.jsx', type: 'page', layer: 'UI Component', lines: 140, path: 'src/pages/Analytics.jsx' },
-      { id: 'Chart.jsx', name: 'Chart.jsx', type: 'component', layer: 'UI Component', lines: 156, path: 'src/components/Chart.jsx' },
-      { id: 'DataTable.jsx', name: 'DataTable.jsx', type: 'component', layer: 'UI Component', lines: 189, path: 'src/components/DataTable.jsx' },
-      { id: 'useAuth.js', name: 'useAuth.js', type: 'hook', layer: 'Hook / Context', lines: 65, path: 'src/hooks/useAuth.js' },
-      { id: 'useData.js', name: 'useData.js', type: 'hook', layer: 'Hook / Context', lines: 54, path: 'src/hooks/useData.js' },
-      { id: 'api.js', name: 'api.js', type: 'util', layer: 'Networking', lines: 120, path: 'src/utils/api.js' },
-    ];
-
-    return {
-      success: true,
-      graph: {
-        nodes,
-        edges: sampleModuleRelationships,
-        stats: {
-          totalNodes: nodes.length,
-          totalEdges: sampleModuleRelationships.length,
-          circularDependencies: 0,
-          maxDepth: 3,
-        },
-      },
-      isDemo: true,
-    };
-  }
-}
-
-/**
- * Fetches onboarding tasks for a repository.
- * Endpoint: GET /api/v1/repositories/:repoId/onboarding
- */
-export async function getOnboardingTasks(repoId) {
-  try {
-    return await request(`/api/v1/repositories/${encodeURIComponent(repoId)}/onboarding`);
-  } catch {
-    await sleep(300);
-    return {
-      success: true,
-      tasks: sampleOnboardingTasks,
-      isDemo: true,
-    };
-  }
-}
-
-/**
- * Updates an onboarding task status.
- * Endpoint: PATCH /api/v1/repositories/:repoId/onboarding/:taskId
- */
-export async function updateOnboardingTask(repoId, taskId, status) {
-  try {
-    return await request(
-      `/api/v1/repositories/${encodeURIComponent(repoId)}/onboarding/${encodeURIComponent(taskId)}`,
-      {
-        method: 'PATCH',
-        body: JSON.stringify({ status }),
-      }
-    );
-  } catch {
-    await sleep(200);
-    return { success: true, taskId, status, isDemo: true };
-  }
-}
-
-/**
- * Disconnects a repository.
- * Endpoint: DELETE /api/v1/repositories/:repoId
+ * Removes repository from frontend tracking
+ * Note: Backend does not expose a DELETE endpoint.
  */
 export async function disconnectRepository(repoId) {
-  try {
-    return await request(`/api/v1/repositories/${encodeURIComponent(repoId)}`, {
-      method: 'DELETE',
-    });
-  } catch {
-    await sleep(500);
-    return { success: true, id: repoId, isDemo: true };
-  }
+  return {
+    success: true,
+    id: repoId,
+    note: 'Removed from local frontend session. Backend repository records remain preserved.',
+  };
+}
+
+// ============================================
+// EXPLORER & FILES
+// ============================================
+
+/**
+ * Fetches flat file list from backend and builds hierarchical folder tree
+ * GET /repos/{repo_id}/files
+ */
+export async function getFileTree(repoId) {
+  const numericId = parseInt(repoId, 10);
+  const targetId = Number.isNaN(numericId) ? repoId : numericId;
+
+  const rawFiles = await request(`/repos/${encodeURIComponent(targetId)}/files`);
+  const tree = buildFileTree(rawFiles);
+  return {
+    success: true,
+    tree,
+    files: rawFiles,
+  };
 }
 
 /**
- * Sends a codebase question for AI analysis.
- * Endpoint: POST /api/v1/repositories/:repoId/ask
+ * Fetches detailed symbols and import relationships for a single file
+ * GET /repos/{repo_id}/files/{path}
  */
-export async function askCodebaseQuestion(repoId, query) {
+export async function getFileDetails(repoId, filePath) {
+  const numericId = parseInt(repoId, 10);
+  const targetId = Number.isNaN(numericId) ? repoId : numericId;
+
+  // Preserve path slashes while encoding special characters
+  const encodedPath = filePath
+    .split('/')
+    .map(encodeURIComponent)
+    .join('/');
+
+  const raw = await request(`/repos/${encodeURIComponent(targetId)}/files/${encodedPath}`);
+  const details = adaptFileDetails(raw, filePath);
+  return {
+    success: true,
+    details,
+    raw,
+  };
+}
+
+/**
+ * File source code content retrieval notice
+ * Backend does not retain complete source files after AST parsing (safe_rmtree).
+ */
+export async function getFileContent(repoId, filePath) {
+  // Check if we can get indexed chunks for this file
   try {
-    return await request(`/api/v1/repositories/${encodeURIComponent(repoId)}/ask`, {
-      method: 'POST',
-      body: JSON.stringify({ query }),
-    });
-  } catch {
-    await sleep(1000);
-    const cleanQ = query.toLowerCase();
+    const hits = await searchCode(repoId, filePath, 5);
+    const fileHits = (hits.hits || []).filter((h) => h.file_path === filePath);
 
-    let answer =
-      'Based on the codebase analysis, application modules interact through standard React component props and centralized state hooks. The main entry point is in `src/App.jsx`, which manages client routing and global context initialization.';
-
-    if (cleanQ.includes('auth') || cleanQ.includes('login') || cleanQ.includes('session')) {
-      answer =
-        'Authentication lifecycle is encapsulated in `src/hooks/useAuth.js`. It exposes an `AuthProvider` React context consumed in `App.jsx`, providing reactive user credentials, login dispatchers, and JWT token refresh mechanisms across child components.';
-    } else if (cleanQ.includes('api') || cleanQ.includes('fetch') || cleanQ.includes('request') || cleanQ.includes('network')) {
-      answer =
-        'HTTP and REST networking is centralized in `src/utils/api.js`. It encapsulates `fetch()` with automated Bearer authorization header injection, request timeout normalization, and centralized error logging.';
-    } else if (cleanQ.includes('chart') || cleanQ.includes('metric') || cleanQ.includes('visual') || cleanQ.includes('graph')) {
-      answer =
-        'Telemetry visualizations are handled by `src/components/Chart.jsx`, which renders vector-sharp SVG polyline sparklines and responsive time-series distributions with kaTeX ka-metrics support.';
-    } else if (cleanQ.includes('start') || cleanQ.includes('init') || cleanQ.includes('first')) {
-      answer =
-        'For initial onboarding, start by inspecting `src/App.jsx` to trace route entry points. Next, read `src/hooks/useAuth.js` to understand how session state is seeded, and finally explore `src/utils/api.js` for data fetching pipelines.';
+    if (fileHits.length > 0) {
+      const code = fileHits
+        .sort((a, b) => a.start_line - b.start_line)
+        .map(
+          (h) =>
+            `// --- Lines ${h.start_line}-${h.end_line} (from indexed AST chunk) ---\n${h.content}`
+        )
+        .join('\n\n');
+      return { success: true, content: code, isPartial: true };
     }
-
-    return {
-      success: true,
-      answer,
-      confidence: 0.95,
-      referencedFiles: ['src/App.jsx', 'src/hooks/useAuth.js', 'src/utils/api.js'],
-      isDemo: true,
-    };
+  } catch {
+    // ignore search failure
   }
+
+  const notice = `// =========================================================================
+// Source File: ${filePath}
+//
+// NOTE: Complete raw file blobs are not stored in the backend database.
+// To conserve disk and avoid retaining external codebases, the backend AST
+// worker extracts symbols, dependency edges, and semantic vector chunks,
+// then purges the temporary git clone directory.
+//
+// See the right panel for extracted symbols, signatures, and imports.
+// =========================================================================`;
+  return { success: true, content: notice, isPartial: true };
+}
+
+/**
+ * Searches symbols by query string
+ * GET /repos/{repo_id}/symbols?q={query}&limit={limit}
+ */
+export async function searchSymbols(repoId, query, limit = 20) {
+  const numericId = parseInt(repoId, 10);
+  const targetId = Number.isNaN(numericId) ? repoId : numericId;
+
+  const symbols = await request(
+    `/repos/${encodeURIComponent(targetId)}/symbols?q=${encodeURIComponent(query)}&limit=${limit}`
+  );
+  return {
+    success: true,
+    symbols: symbols || [],
+  };
+}
+
+// ============================================
+// DEPENDENCY MAP
+// ============================================
+
+/**
+ * Fetches module map and module-to-module graph for React Flow visualization
+ * GET /repos/{repo_id}/map
+ */
+export async function getDependencyGraph(repoId) {
+  const numericId = parseInt(repoId, 10);
+  const targetId = Number.isNaN(numericId) ? repoId : numericId;
+
+  const rawMap = await request(`/repos/${encodeURIComponent(targetId)}/map`);
+  return {
+    success: true,
+    projectSummary: rawMap.project_summary,
+    modules: rawMap.modules || [],
+    entryPoints: rawMap.entry_points || [],
+    graph: rawMap.graph || { nodes: [], edges: [] },
+    techStack: rawMap.tech_stack || {},
+    raw: rawMap,
+  };
+}
+
+// ============================================
+// SEARCH & Q&A
+// ============================================
+
+/**
+ * Hybrid vector + keyword search over code chunks (No LLM required)
+ * POST /repos/{repo_id}/search
+ */
+export async function searchCode(repoId, query, k = 8) {
+  const numericId = parseInt(repoId, 10);
+  const targetId = Number.isNaN(numericId) ? repoId : numericId;
+
+  const res = await request(`/repos/${encodeURIComponent(targetId)}/search`, {
+    method: 'POST',
+    body: JSON.stringify({ query, k }),
+  });
+  return {
+    success: true,
+    hits: res.hits || [],
+  };
+}
+
+/**
+ * Grounded AI Q&A over codebase with citations
+ * POST /repos/{repo_id}/ask
+ */
+export async function askCodebaseQuestion(repoId, question) {
+  const numericId = parseInt(repoId, 10);
+  const targetId = Number.isNaN(numericId) ? repoId : numericId;
+
+  const res = await request(`/repos/${encodeURIComponent(targetId)}/ask`, {
+    method: 'POST',
+    body: JSON.stringify({ question }),
+  });
+
+  const citations = res.citations || [];
+  const referencedFiles = Array.from(
+    new Set(citations.map((c) => c.path).concat((res.sources || []).map((s) => s.file_path)))
+  );
+
+  return {
+    success: true,
+    answer: res.answer,
+    citations,
+    sources: res.sources || [],
+    referencedFiles,
+    raw: res,
+  };
+}
+
+// ============================================
+// IMPACT ANALYSIS
+// ============================================
+
+/**
+ * Reverse dependency blast-radius analysis via NetworkX
+ * GET /repos/{repo_id}/impact?symbol={uid}&file={path}&depth={depth}&explain={explain}
+ */
+export async function getImpactAnalysis(repoId, { symbol, file, depth = 3, explain = false } = {}) {
+  const numericId = parseInt(repoId, 10);
+  const targetId = Number.isNaN(numericId) ? repoId : numericId;
+
+  const params = new URLSearchParams();
+  if (symbol) params.set('symbol', symbol);
+  if (file) params.set('file', file);
+  params.set('depth', String(depth));
+  if (explain) params.set('explain', 'true');
+
+  const res = await request(
+    `/repos/${encodeURIComponent(targetId)}/impact?${params.toString()}`
+  );
+  return {
+    success: true,
+    target: res.target,
+    depth: res.depth,
+    affectedSymbols: res.affected_symbols || [],
+    affectedFiles: res.affected_files || [],
+    caveat: res.caveat,
+    explanation: res.explanation,
+    raw: res,
+  };
+}
+
+// ============================================
+// ONBOARDING
+// ============================================
+
+/**
+ * Generates dynamic onboarding roadmap tasks from repository summary & module map
+ */
+export async function getOnboardingTasks(repoId) {
+  const repoRes = await getRepositoryById(repoId);
+  if (!repoRes.success || !repoRes.repository) {
+    throw new Error('Repository not found for onboarding quests.');
+  }
+
+  const tasks = generateOnboardingTasks(repoRes.repository);
+  return {
+    success: true,
+    tasks,
+  };
+}
+
+/**
+ * Updates task status in localStorage
+ */
+export async function updateOnboardingTask(repoId, taskId, status) {
+  saveTaskStatus(repoId, taskId, status);
+  return { success: true, taskId, status };
 }

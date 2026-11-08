@@ -318,3 +318,113 @@
   justify-content: center;
   margin-top: 14px;
 }
+
+/* Enhanced Failure Details for Indexing Errors */
+.cv-connect-failed-file {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background-color: rgba(240, 113, 113, 0.09);
+  border: 1px solid rgba(240, 113, 113, 0.28);
+  border-radius: var(--radius-sm);
+  margin-top: 4px;
+  max-width: 520px;
+}
+
+.cv-connect-failed-file__icon {
+  color: #F07171;
+  flex-shrink: 0;
+}
+
+.cv-connect-failed-file__label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #D8E2EC;
+}
+
+.cv-connect-failed-file__path {
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  color: #4C9AFF;
+  background-color: rgba(4, 9, 20, 0.6);
+  padding: 2px 6px;
+  border-radius: var(--radius-xs);
+  word-break: break-all;
+}
+
+.cv-connect-advisory-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  background-color: rgba(245, 165, 36, 0.08);
+  border: 1px solid rgba(245, 165, 36, 0.25);
+  border-radius: var(--radius-sm);
+  max-width: 520px;
+  text-align: left;
+  margin-top: 2px;
+}
+
+.cv-connect-advisory-box__icon {
+  color: #F5A524;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.cv-connect-advisory-box__text {
+  font-size: 0.78rem;
+  color: #C2D0E4;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.cv-connect-tech-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 520px;
+  margin-top: 4px;
+}
+
+.cv-connect-tech-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: #9AA7BD;
+  font-size: 0.76rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-xs);
+  transition: all var(--duration-fast) var(--ease-default);
+}
+
+.cv-connect-tech-toggle:hover {
+  color: #4C9AFF;
+  background-color: rgba(76, 154, 255, 0.08);
+}
+
+.cv-connect-tech-wrapper {
+  width: 100%;
+}
+
+.cv-connect-tech-pre {
+  background-color: #040914;
+  border: 1px solid rgba(76, 154, 255, 0.18);
+  border-radius: var(--radius-xs);
+  padding: 10px 14px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: #8C9CB2;
+  line-height: 1.45;
+  text-align: left;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 150px;
+  overflow-y: auto;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5);
+}

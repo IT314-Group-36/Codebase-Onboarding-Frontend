@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Sparkles, Send, X, FileText } from 'lucide-react';
+import { Sparkles, Send, X, FileText, CheckCircle2 } from 'lucide-react';
 import Button from './Button';
 import { askCodebaseQuestion } from '../services/api';
 import './AskQuestionsModal.css';
@@ -37,15 +37,17 @@ export default function AskQuestionsModal({ open, onClose, repo }) {
             sender: 'assistant',
             text: res.answer,
             referencedFiles: res.referencedFiles,
+            citations: res.citations,
           },
         ]);
       }
-    } catch {
+    } catch (err) {
       setConversation((prev) => [
         ...prev,
         {
           sender: 'assistant',
-          text: 'Sorry, I encountered a temporary simulation issue. Please try again.',
+          text: err.message || 'Error communicating with the backend Q&A service. If LLM_API_KEY is not configured in backend/.env, the LLM endpoint is unavailable.',
+          isError: true,
         },
       ]);
     } finally {
@@ -54,9 +56,9 @@ export default function AskQuestionsModal({ open, onClose, repo }) {
   };
 
   const samplePrompts = [
-    'Where is authentication handled?',
-    'How do API requests communicate with the backend?',
-    'Which component renders the live charts?',
+    'Explain the high-level architecture of this codebase',
+    'Where is the main entry point where execution starts?',
+    'What are the core modules and their responsibilities?',
   ];
 
   return (
@@ -75,7 +77,7 @@ export default function AskQuestionsModal({ open, onClose, repo }) {
             </div>
             <div>
               <h3 id="ask-modal-title" className="cv-ask-modal__title">Ask CODEVERSE</h3>
-              <p className="cv-ask-modal__sub">AI Codebase Companion · Demo Simulation</p>
+              <p className="cv-ask-modal__sub">FastAPI Codebase Assistant · Verified Citations</p>
             </div>
           </div>
           <button
@@ -95,11 +97,14 @@ export default function AskQuestionsModal({ open, onClose, repo }) {
                 key={idx}
                 className={`cv-ask-msg cv-ask-msg--${msg.sender}`}
               >
-                <div className="cv-ask-msg__bubble">
+                <div className="cv-ask-msg__bubble" style={msg.isError ? { borderColor: 'rgba(235, 87, 87, 0.4)' } : undefined}>
                   <p>{msg.text}</p>
-                  {msg.referencedFiles && (
+                  {msg.referencedFiles && msg.referencedFiles.length > 0 && (
                     <div className="cv-ask-msg__refs">
-                      <span className="cv-ask-msg__refs-title">Referenced modules:</span>
+                      <span className="cv-ask-msg__refs-title">
+                        <CheckCircle2 size={11} style={{ color: 'var(--cv-success)', marginRight: '4px' }} />
+                        Citations ({msg.referencedFiles.length}):
+                      </span>
                       {msg.referencedFiles.map((file) => (
                         <span key={file} className="cv-ask-msg__file">
                           <FileText size={12} />
@@ -115,7 +120,7 @@ export default function AskQuestionsModal({ open, onClose, repo }) {
               <div className="cv-ask-msg cv-ask-msg--assistant">
                 <div className="cv-ask-msg__bubble cv-ask-msg__loading">
                   <span className="cv-btn__spinner" />
-                  <span>Analyzing code nodes...</span>
+                  <span>Retrieving code chunks &amp; querying LLM...</span>
                 </div>
               </div>
             )}

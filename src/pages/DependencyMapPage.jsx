@@ -233,8 +233,8 @@ export default function DependencyMapPage() {
 
   const effectiveRepo = repo || {
     id: repoId,
-    name: 'react-dashboard',
-    owner: 'alexrivera',
+    name: `Repository ${repoId}`,
+    owner: 'GitHub',
     branch: 'main',
   };
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   FileText,
@@ -6,8 +6,6 @@ import {
   Boxes,
   Code2,
   GitBranch,
-  Star,
-  GitFork,
   Clock,
   FolderTree,
   MessageSquare,
@@ -15,12 +13,15 @@ import {
   ArrowRight,
   FileCheck,
   CheckCircle2,
+  RotateCcw,
+  AlertTriangle,
 } from 'lucide-react';
 import StatusBadge from '../components/StatusBadge';
 import Button from '../components/Button';
 import LoadingState from '../components/LoadingState';
 import AskQuestionsModal from '../components/AskQuestionsModal';
-import { sampleRepositories } from '../data/sampleData';
+import { getRepositoryById, reindexRepository } from '../services/api';
+import { showToast } from '../utils/toast';
 import './RepoOverviewPage.css';
 
 /**
@@ -32,75 +33,142 @@ export default function RepoOverviewPage() {
   const { repoId } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [reindexing, setReindexing] = useState(false);
   const [repo, setRepo] = useState(null);
+  const [error, setError] = useState(null);
   const [askModalOpen, setAskModalOpen] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      const found = sampleRepositories.find((r) => r.id === repoId);
-      setRepo(found || sampleRepositories[0]);
-      setLoading(false);
-    }, 350);
-    return () => clearTimeout(timer);
-  }, [repoId]);
+    let isMounted = true;
+    async function loadRepo() {
+      try {
+        const res = await getRepositoryById(repoId);
+        if (!isMounted) return;
+        if (res.success && res.repository) {
+          setRepo(res.repository);
+        } else {
+          setError('Repository specifications could not be loaded.');
+        }
+      } catch (err) {
+        if (!isMounted) return;
+        setError(err.message || 'Failed to fetch repository from backend.');
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    }
+    loadRepo();
+    return () => {
+      isMounted = false;
+    };
+  }, [repoId, refreshTrigger]);
+
+  const handleReindex = async () => {
+    if (!repo) return;
+    setReindexing(true);
+    try {
+      const res = await reindexRepository(repo.id);
+      if (res.success) {
+        showToast('Repository re-indexing queued in background worker.', 'success');
+        setRefreshTrigger((v) => v + 1);
+      }
+    } catch (err) {
+      showToast(err.message || 'Re-index request failed.', 'error');
+    } finally {
+      setReindexing(false);
+    }
+  };
+
+  const handleOpenFileInExplorer = (filePath) => {
+    navigate(`/explorer/${repo.id}?file=${encodeURIComponent(filePath)}`);
+  };
+
+  // Dark Aurora accent palette for language distribution bar (warm amber, soft blue, electric blue, slate)
+  const warmLangColors = ['#F5A524', '#4C9AFF', '#1F6FEB', '#C4845C', '#7B96B2'];
+
+  const importantFilesList = useMemo(() => {
+    if (!repo) return [];
+    const entryFiles = (repo.moduleMap?.entry_points || []).map((e) => ({
+      path: e.path,
+      type: 'Entrypoint',
+      summary: e.reason || 'Application bootstrap entrypoint identified by AST parser.',
+    }));
+
+    const keyFiles = (repo.summary?.key_files || []).map((path) => ({
+      path,
+      type: 'Key Module',
+      summary: 'High-relevance module highlighted in repository architectural digest.',
+    }));
+
+    const combined = [
+      ...entryFiles,
+      ...keyFiles.filter((k) => !entryFiles.some((e) => e.path === k.path)),
+    ];
+
+    if (combined.length === 0 && repo.defaultFile) {
+      combined.push({
+        path: repo.defaultFile,
+        type: 'Default File',
+        summary: 'Primary detected entrypoint file.',
+      });
+    }
+
+    return combined;
+  }, [repo]);
+
+  const recentTimeline = useMemo(() => {
+    if (!repo) return [];
+    const items = [];
+
+    if (repo.rawStatus === 'ready') {
+      items.push({
+        label: `AST index verified (${repo.stats.functions} symbols, ${repo.stats.importEdges || 0} import edges)`,
+        time: repo.analyzedAt ? new Date(repo.analyzedAt).toLocaleTimeString() : 'Recently',
+        icon: <FileCheck size={14} />,
+      });
+      items.push({
+        label: `Module dependency map generated (${repo.stats.modules} modules)`,
+        time: repo.analyzedAt ? new Date(repo.analyzedAt).toLocaleTimeString() : 'Recently',
+        icon: <Layers size={14} />,
+      });
+    }
+
+    if (repo.commitSha) {
+      items.push({
+        label: `Synchronized commit SHA ${repo.commitSha.slice(0, 8)}`,
+        time: 'Checked out',
+        icon: <GitBranch size={14} />,
+      });
+    }
+
+    items.push({
+      label: `Repository registered on branch ${repo.branch}`,
+      time: repo.connectedAt ? new Date(repo.connectedAt).toLocaleDateString() : 'Connected',
+      icon: <CheckCircle2 size={14} />,
+    });
+
+    return items;
+  }, [repo]);
 
   if (loading) {
     return <LoadingState message="Loading repository specifications..." fullPage />;
   }
 
-  if (!repo) {
+  if (error || !repo) {
     return (
-      <div className="cv-repo-not-found">
+      <div className="cv-repo-not-found" style={{ padding: '4rem 2rem', textAlign: 'center' }}>
         <h2>Repository Not Found</h2>
-        <p>The requested repository does not exist in local fixtures.</p>
+        <p style={{ color: 'var(--cv-text-secondary)', marginBottom: '1.5rem' }}>
+          {error || `Repository ${repoId} is not registered in the backend database.`}
+        </p>
         <Button variant="primary" onClick={() => navigate('/dashboard')}>
           Back to Dashboard
         </Button>
       </div>
     );
   }
-
-  // Dark Aurora accent palette for language distribution bar (warm amber, soft blue, electric blue, slate)
-  const warmLangColors = ['#F5A524', '#4C9AFF', '#1F6FEB', '#C4845C', '#7B96B2'];
-
-  const importantFilesList = [
-    {
-      path: 'src/App.jsx',
-      type: 'Entrypoint',
-      summary: 'Configures client routing, AuthProvider context wrapper, and layout scaffold.',
-    },
-    {
-      path: 'src/utils/api.js',
-      type: 'HTTP Client',
-      summary: 'Centralized network wrapper handling JWT authorization injection and status normalization.',
-    },
-    {
-      path: 'src/hooks/useAuth.js',
-      type: 'Session Hook',
-      summary: 'Provides reactive session status, login/logout dispatchers, and token credentials.',
-    },
-    {
-      path: 'src/components/Chart.jsx',
-      type: 'SVG Component',
-      summary: 'Renders dynamic time-series sparklines with responsive vector coordinates.',
-    },
-    {
-      path: 'package.json',
-      type: 'Manifest',
-      summary: 'Declares runtime ecosystem modules (React 19, Lucide, Zustand) and Vite build scripts.',
-    },
-  ];
-
-  const recentTimeline = [
-    { label: 'Initial AST index completed', time: '14 minutes ago', icon: <FileCheck size={14} /> },
-    { label: 'Module dependency edges verified', time: '16 minutes ago', icon: <Layers size={14} /> },
-    { label: '6 onboarding milestone quests generated', time: '18 minutes ago', icon: <CheckCircle2 size={14} /> },
-    { label: 'GitHub branch main synchronized', time: '20 minutes ago', icon: <GitBranch size={14} /> },
-  ];
-
-  const handleOpenFileInExplorer = (filePath) => {
-    navigate(`/explorer/${repo.id}?file=${encodeURIComponent(filePath)}`);
-  };
 
   return (
     <div className="cv-repo-overview">
@@ -117,12 +185,11 @@ export default function RepoOverviewPage() {
             <span className="cv-ro-meta-item">
               <GitBranch size={13} /> <code>{repo.branch}</code>
             </span>
-            <span className="cv-ro-meta-item">
-              <Star size={13} /> {repo.stars.toLocaleString()} stars
-            </span>
-            <span className="cv-ro-meta-item">
-              <GitFork size={13} /> {repo.forks} forks
-            </span>
+            {repo.commitSha && (
+              <span className="cv-ro-meta-item">
+                <code>{repo.commitSha.slice(0, 7)}</code>
+              </span>
+            )}
             <span className="cv-ro-meta-item">
               <Clock size={13} /> Connected {new Date(repo.connectedAt).toLocaleDateString()}
             </span>
@@ -130,6 +197,17 @@ export default function RepoOverviewPage() {
         </div>
 
         <div className="cv-ro-header__actions">
+          <Button
+            variant="secondary"
+            size="md"
+            icon={<RotateCcw size={14} />}
+            onClick={handleReindex}
+            loading={reindexing}
+            title="Trigger full re-index in background worker"
+          >
+            Reindex
+          </Button>
+
           <Button
             variant="secondary"
             size="md"
@@ -168,6 +246,34 @@ export default function RepoOverviewPage() {
         </div>
       </section>
 
+      {/* Warnings Banner if present from backend */}
+      {repo.warnings && repo.warnings.length > 0 && (
+        <div
+          style={{
+            margin: '1.25rem 0',
+            padding: '0.875rem 1.25rem',
+            background: 'rgba(231, 180, 90, 0.08)',
+            border: '1px solid rgba(231, 180, 90, 0.3)',
+            borderRadius: 'var(--cv-radius-md)',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '0.75rem',
+          }}
+        >
+          <AlertTriangle size={18} style={{ color: 'var(--cv-warning)', flexShrink: 0, marginTop: '2px' }} />
+          <div>
+            <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--cv-warning)' }}>
+              Indexer Notices:
+            </span>
+            <ul style={{ margin: '0.25rem 0 0 1rem', padding: 0, fontSize: '0.8125rem', color: 'var(--cv-text-secondary)' }}>
+              {repo.warnings.map((w, idx) => (
+                <li key={idx}>{w}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+
       {/* Compact Metrics Strip */}
       <section className="cv-ro-metrics-strip" aria-label="AST Metrics">
         <div className="cv-ro-metric-cell">
@@ -189,7 +295,7 @@ export default function RepoOverviewPage() {
         <div className="cv-ro-metric-cell">
           <div className="cv-ro-metric-cell__label">
             <Code2 size={14} />
-            <span>Functions</span>
+            <span>Symbols</span>
           </div>
           <span className="cv-ro-metric-cell__value">{repo.stats.functions}</span>
         </div>
@@ -197,7 +303,7 @@ export default function RepoOverviewPage() {
         <div className="cv-ro-metric-cell">
           <div className="cv-ro-metric-cell__label">
             <Layers size={14} />
-            <span>Components</span>
+            <span>Call / Import Edges</span>
           </div>
           <span className="cv-ro-metric-cell__value">{repo.stats.components}</span>
         </div>
@@ -251,22 +357,29 @@ export default function RepoOverviewPage() {
         <div className="cv-ro-card">
           <h2 className="cv-ro-card__title">Architecture Summary</h2>
           <div className="cv-ro-arch-body">
-            <p className="cv-ro-arch-para">
-              <strong>Layered Client Architecture:</strong> This codebase utilizes Vite as an ES module bundler and React 19 for component composition.
-            </p>
-            <ul className="cv-ro-arch-points">
-              <li>
-                <strong>Data Ingestion:</strong> Requests flow through <code>src/utils/api.js</code> with centralized error handling.
-              </li>
-              <li>
-                <strong>State &amp; Auth:</strong> Authentication state is broadcast via <code>AuthProvider</code> in <code>useAuth.js</code>.
-              </li>
-              <li>
-                <strong>UI Visualization:</strong> High-density dashboards use vector SVG sparklines in <code>src/components/Chart.jsx</code>.
-              </li>
-            </ul>
-            <div className="cv-ro-ai-digest-badge">
-              <span>Simulated AI Analysis Digest · Ready for backend LLM inference</span>
+            {repo.summary?.architecture ? (
+              <p className="cv-ro-arch-para">{repo.summary.architecture}</p>
+            ) : repo.summary?.description ? (
+              <p className="cv-ro-arch-para">{repo.summary.description}</p>
+            ) : (
+              <p className="cv-ro-arch-para">
+                Codebase structure indexed with {repo.stats.modules} primary modules and {repo.stats.functions} AST syntax symbols.
+              </p>
+            )}
+
+            {repo.summary?.how_to_run && repo.summary.how_to_run !== 'n/a' && (
+              <div style={{ marginTop: '0.875rem', padding: '0.75rem', background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--cv-radius-sm)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--cv-text-muted)', display: 'block', marginBottom: '0.25rem' }}>
+                  Execution Setup:
+                </span>
+                <span style={{ fontSize: '0.875rem', color: 'var(--cv-text-secondary)', fontFamily: 'var(--cv-font-mono)' }}>
+                  {repo.summary.how_to_run}
+                </span>
+              </div>
+            )}
+
+            <div className="cv-ro-ai-digest-badge" style={{ marginTop: '1rem' }}>
+              <span>Verified AST Architecture · Grounded in static graph facts</span>
             </div>
           </div>
         </div>
@@ -279,33 +392,39 @@ export default function RepoOverviewPage() {
           </div>
 
           <div className="cv-ro-important-files">
-            {importantFilesList.map((f) => (
-              <div
-                key={f.path}
-                className="cv-ro-file-row"
-                onClick={() => handleOpenFileInExplorer(f.path)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => e.key === 'Enter' && handleOpenFileInExplorer(f.path)}
-              >
-                <div className="cv-ro-file-row__title">
-                  <FileText size={15} className="cv-ro-file-row__icon" />
-                  <code>{f.path}</code>
-                  <span className="cv-ro-file-badge">{f.type}</span>
+            {importantFilesList.length > 0 ? (
+              importantFilesList.map((f) => (
+                <div
+                  key={f.path}
+                  className="cv-ro-file-row"
+                  onClick={() => handleOpenFileInExplorer(f.path)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => e.key === 'Enter' && handleOpenFileInExplorer(f.path)}
+                >
+                  <div className="cv-ro-file-row__title">
+                    <FileText size={15} className="cv-ro-file-row__icon" />
+                    <code>{f.path}</code>
+                    <span className="cv-ro-file-badge">{f.type}</span>
+                  </div>
+                  <p className="cv-ro-file-row__desc">{f.summary}</p>
+                  <div className="cv-ro-file-row__open" aria-hidden="true">
+                    <span>Inspect</span>
+                    <ArrowRight size={13} />
+                  </div>
                 </div>
-                <p className="cv-ro-file-row__desc">{f.summary}</p>
-                <div className="cv-ro-file-row__open" aria-hidden="true">
-                  <span>Inspect</span>
-                  <ArrowRight size={13} />
-                </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p style={{ color: 'var(--cv-text-muted)', padding: '1rem' }}>
+                No entrypoint files flagged during static analysis.
+              </p>
+            )}
           </div>
         </div>
 
         {/* Recent Activity Timeline */}
         <div className="cv-ro-card cv-ro-card--wide">
-          <h2 className="cv-ro-card__title">Recent Analysis Activity</h2>
+          <h2 className="cv-ro-card__title">Analysis &amp; Synchronization Timeline</h2>
           <div className="cv-ro-timeline">
             {recentTimeline.map((item, idx) => (
               <div key={idx} className="cv-ro-timeline__item">

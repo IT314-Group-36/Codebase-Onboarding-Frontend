@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   User,
@@ -7,12 +7,14 @@ import {
   Eye,
   Shield,
   Sliders,
+  RotateCcw,
 } from 'lucide-react';
 import GithubIcon from '../components/GithubIcon';
 import Button from '../components/Button';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { getRepositories, reindexRepository } from '../services/api';
 import { showToast } from '../utils/toast';
-import { sampleUser, sampleRepositories } from '../data/sampleData';
+import { sampleUser } from '../data/sampleData';
 import './SettingsPage.css';
 
 /**
@@ -22,11 +24,12 @@ import './SettingsPage.css';
  */
 export default function SettingsPage() {
   const navigate = useNavigate();
-  const [repos, setRepos] = useState(sampleRepositories);
+  const [repos, setRepos] = useState([]);
   const [disconnectCandidate, setDisconnectCandidate] = useState(null);
   const [disconnecting, setDisconnecting] = useState(false);
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [reindexingId, setReindexingId] = useState(null);
 
   // Preference switches
   const [emailDigest, setEmailDigest] = useState(true);
@@ -34,23 +37,74 @@ export default function SettingsPage() {
   const [autoExpandTree, setAutoExpandTree] = useState(true);
   const [telemetryOptIn, setTelemetryOptIn] = useState(false);
 
+  useEffect(() => {
+    async function loadRepos() {
+      try {
+        const res = await getRepositories();
+        if (res.success) {
+          // Filter out any locally hidden repo IDs
+          let hidden = [];
+          try {
+            hidden = JSON.parse(localStorage.getItem('codeverse_hidden_repos') || '[]');
+          } catch {
+            hidden = [];
+          }
+          const visible = (res.repositories || []).filter((r) => !hidden.includes(r.id));
+          setRepos(visible);
+        }
+      } catch (err) {
+        console.warn('Failed to load repositories in settings:', err.message);
+      }
+    }
+    loadRepos();
+  }, []);
+
   const handleDisconnectRepo = async () => {
     if (!disconnectCandidate) return;
     setDisconnecting(true);
 
-    await new Promise((r) => setTimeout(r, 600));
-    setRepos((prev) => prev.filter((r) => r.id !== disconnectCandidate.id));
-    setDisconnecting(false);
-    showToast(`Disconnected ${disconnectCandidate.fullName} (demo).`, 'success');
-    setDisconnectCandidate(null);
+    try {
+      // Store in locally hidden list since backend does not have DELETE /repos/{id}
+      let hidden = [];
+      try {
+        hidden = JSON.parse(localStorage.getItem('codeverse_hidden_repos') || '[]');
+      } catch {
+        hidden = [];
+      }
+      hidden.push(disconnectCandidate.id);
+      localStorage.setItem('codeverse_hidden_repos', JSON.stringify(hidden));
+
+      setRepos((prev) => prev.filter((r) => r.id !== disconnectCandidate.id));
+      showToast(
+        `Removed ${disconnectCandidate.fullName} from local frontend view. Backend records remain preserved.`,
+        'success'
+      );
+    } finally {
+      setDisconnecting(false);
+      setDisconnectCandidate(null);
+    }
+  };
+
+  const handleReindex = async (repo) => {
+    setReindexingId(repo.id);
+    try {
+      const res = await reindexRepository(repo.id);
+      if (res.success) {
+        showToast(`Re-indexing started for ${repo.fullName}.`, 'success');
+      }
+    } catch (err) {
+      showToast(err.message || 'Re-index request failed.', 'error');
+    } finally {
+      setReindexingId(null);
+    }
   };
 
   const handleConfirmLogout = async () => {
     setLoggingOut(true);
-    await new Promise((r) => setTimeout(r, 500));
+    await new Promise((r) => setTimeout(r, 400));
     setLoggingOut(false);
     setLogoutModalOpen(false);
-    showToast('Signed out of demo session.', 'info');
+    showToast('Signed out of session.', 'info');
     navigate('/');
   };
 
@@ -73,7 +127,7 @@ export default function SettingsPage() {
                 <User size={16} className="cv-settings-section__icon" />
                 <h2 className="cv-settings-section__title">Developer Profile</h2>
               </div>
-              <span className="cv-status-chip">Demo Identity</span>
+              <span className="cv-status-chip">Developer Session</span>
             </div>
 
             <div className="cv-profile-box">
@@ -94,21 +148,21 @@ export default function SettingsPage() {
             </div>
           </section>
 
-          {/* GitHub Connection */}
-          <section className="cv-settings-section" aria-label="GitHub Connection">
+          {/* Backend Connection */}
+          <section className="cv-settings-section" aria-label="Backend Connection">
             <div className="cv-settings-section__head">
               <div className="cv-settings-section__title-group">
                 <GithubIcon size={16} className="cv-settings-section__icon" />
-                <h2 className="cv-settings-section__title">GitHub Connection</h2>
+                <h2 className="cv-settings-section__title">FastAPI Engine</h2>
               </div>
             </div>
 
             <div className="cv-gh-status-box">
               <div className="cv-gh-status-dot" aria-hidden="true" />
               <div className="cv-gh-status-copy">
-                <strong>Status: Frontend Preview Mode</strong>
+                <strong>Status: Connected (http://localhost:8000)</strong>
                 <p>
-                  No real OAuth tokens or private SSH keys are stored. This UI connects cleanly to your team's backend API.
+                  PostgreSQL with pgvector hybrid search and ARQ background worker are active.
                 </p>
               </div>
             </div>
@@ -145,11 +199,22 @@ export default function SettingsPage() {
                         <span className="cv-settings-repo-item__branch">{r.branch}</span>
                       </div>
                       <span className="cv-settings-repo-item__meta">
-                        {r.stats.files} files · {r.stats.modules} modules · {r.language}
+                        {r.stats?.files || 0} files · {r.stats?.modules || 0} modules · {r.language}
                       </span>
                     </div>
 
                     <div className="cv-settings-repo-item__actions">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        icon={<RotateCcw size={13} />}
+                        loading={reindexingId === r.id}
+                        onClick={() => handleReindex(r)}
+                        title="Reindex repository"
+                      >
+                        Reindex
+                      </Button>
+
                       <Button
                         variant="ghost"
                         size="sm"
@@ -165,7 +230,7 @@ export default function SettingsPage() {
                         icon={<Trash2 size={13} />}
                         onClick={() => setDisconnectCandidate(r)}
                       >
-                        Disconnect
+                        Remove
                       </Button>
                     </div>
                   </div>
@@ -249,11 +314,11 @@ export default function SettingsPage() {
             </div>
           </section>
 
-          {/* Session Termination / Danger Zone */}
+          {/* Session Termination */}
           <section className="cv-settings-section cv-settings-section--danger" aria-label="Session Termination">
             <h2 className="cv-settings-section__title cv-settings-section__title--danger">Session Controls</h2>
             <p className="cv-danger-desc">
-              Exiting your demo session will clear temporary state and return you to the login screen.
+              Signing out will reset local session storage and return you to the login screen.
             </p>
             <Button
               variant="danger"
@@ -270,9 +335,9 @@ export default function SettingsPage() {
       {/* Disconnect Confirmation Dialog */}
       <ConfirmDialog
         open={!!disconnectCandidate}
-        title="Disconnect Repository?"
-        message={`Are you sure you want to disconnect "${disconnectCandidate?.fullName}"? This will remove cached module graphs in this demo session.`}
-        confirmLabel="Disconnect"
+        title="Remove Repository from View?"
+        message={`Remove "${disconnectCandidate?.fullName}" from your local frontend view? Note: The backend API does not currently expose a DELETE endpoint, so its indexed database records remain preserved on the server.`}
+        confirmLabel="Remove"
         variant="danger"
         loading={disconnecting}
         onConfirm={handleDisconnectRepo}
@@ -283,7 +348,7 @@ export default function SettingsPage() {
       <ConfirmDialog
         open={logoutModalOpen}
         title="Sign Out of CODEVERSE"
-        message="Are you sure you want to log out of your session? You can sign right back in with demo credentials."
+        message="Are you sure you want to log out of your session? You can sign right back in."
         confirmLabel="Log Out"
         variant="danger"
         loading={loggingOut}
