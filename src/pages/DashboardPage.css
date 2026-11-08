@@ -18,8 +18,13 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
   flex-wrap: wrap;
+}
+
+.cv-dashboard-header__left {
+  flex: 1;
+  min-width: 260px;
 }
 
 .cv-dashboard-header__title-row {
@@ -52,56 +57,24 @@
   margin-top: 3px;
 }
 
-/* Signature 3D Liquid Chrome Core Header Visual */
-.cv-dashboard-signature-visual {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: linear-gradient(135deg, rgba(14, 46, 102, 0.35) 0%, rgba(7, 18, 38, 0.85) 100%);
-  backdrop-filter: blur(14px);
-  border: 1px solid rgba(76, 154, 255, 0.28);
-  border-radius: var(--radius-lg);
-  padding: 6px 14px 6px 8px;
-  box-shadow: 0 4px 18px rgba(2, 6, 15, 0.6), 0 0 16px rgba(31, 111, 235, 0.25);
-  transition: all var(--duration-fast) var(--ease-default);
-}
-
-.cv-dashboard-signature-visual:hover {
-  border-color: rgba(31, 111, 235, 0.6);
-  box-shadow: 0 6px 24px rgba(2, 6, 15, 0.8), 0 0 22px rgba(31, 111, 235, 0.38);
-  transform: translateY(-1px);
-}
-
-.cv-dashboard-signature-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.cv-dashboard-signature-tag {
-  font-family: var(--font-mono);
-  font-size: 0.64rem;
-  font-weight: 700;
-  color: #F5A524;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.cv-dashboard-signature-name {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: #FFFFFF;
-}
-
-@media (max-width: 900px) {
-  .cv-dashboard-signature-visual {
-    display: none;
-  }
-}
-
 .cv-dashboard-header__actions {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .cv-dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .cv-dashboard-header__actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
 }
 
 /* Demo Environment Strip */

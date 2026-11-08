@@ -30,10 +30,24 @@ export default function Sidebar({
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Extract current repoId from path if active (e.g. /explorer/repo-001 or /dependencies/repo-002)
+  // Extract current repoId from path if active (e.g. /explorer/1 or /dependencies/1)
   const currentPath = location.pathname;
   const repoMatch = currentPath.match(/\/(?:repository|explorer|dependencies|onboarding|qa)\/([^/?]+)/);
-  const activeRepoId = repoMatch ? repoMatch[1] : 'repo-001';
+  if (repoMatch) {
+    try {
+      localStorage.setItem('codeverse_last_repo_id', repoMatch[1]);
+    } catch {
+      // ignore storage access errors
+    }
+  }
+  const lastActiveRepoId = (() => {
+    try {
+      return localStorage.getItem('codeverse_last_repo_id') || '1';
+    } catch {
+      return '1';
+    }
+  })();
+  const activeRepoId = repoMatch ? repoMatch[1] : lastActiveRepoId;
 
   const navItems = [
     { to: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} strokeWidth={1.8} /> },

@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   GitBranch,
@@ -11,6 +11,7 @@ import {
   Clock,
   Circle,
   Filter,
+  RefreshCw,
 } from 'lucide-react';
 import StatCard from '../components/StatCard';
 import RepositoryCard from '../components/RepositoryCard';
@@ -18,10 +19,10 @@ import SearchInput from '../components/SearchInput';
 import EmptyState from '../components/EmptyState';
 import LoadingState from '../components/LoadingState';
 import Button from '../components/Button';
-const LiquidChromeOrb = lazy(() => import('../components/3d/LiquidChromeOrb'));
+import { getRepositories } from '../services/api';
+import { generateOnboardingTasks, saveTaskStatus } from '../services/adapters';
 import {
   sampleRepositories,
-  dashboardStats,
   sampleOnboardingTasks,
   sampleUser,
 } from '../data/sampleData';
@@ -31,7 +32,7 @@ import './DashboardPage.css';
 /**
  * Page 2: Main Dashboard
  * Information-dense developer workspace displaying connected repositories,
- * onboarding progress, and architectural metrics.
+ * onboarding progress, and architectural metrics loaded directly from FastAPI backend.
  */
 export default function DashboardPage() {
   const navigate = useNavigate();
@@ -39,16 +40,55 @@ export default function DashboardPage() {
   const [repos, setRepos] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [tasks, setTasks] = useState(sampleOnboardingTasks);
-  const [simulateEmpty, setSimulateEmpty] = useState(false);
+  const [tasks, setTasks] = useState([]);
+  const [demoMode, setDemoMode] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setRepos(sampleRepositories);
-      setLoading(false);
-    }, 350);
-    return () => clearTimeout(timer);
-  }, []);
+    let isMounted = true;
+    async function loadDashboardRepos() {
+      try {
+        const res = await getRepositories();
+        if (!isMounted) return;
+        if (res.success) {
+          setRepos(res.repositories || []);
+
+          // Synthesize onboarding tasks from the first ready repository if available
+          const firstReady = (res.repositories || []).find((r) => r.rawStatus === 'ready');
+          if (firstReady) {
+            const generated = generateOnboardingTasks(firstReady);
+            setTasks(generated);
+          } else if (res.repositories?.length > 0) {
+            const generated = generateOnboardingTasks(res.repositories[0]);
+            setTasks(generated);
+          } else {
+            setTasks(sampleOnboardingTasks);
+          }
+        }
+      } catch (err) {
+        if (!isMounted) return;
+        console.warn('Backend load failed, switching to local state:', err.message);
+        showToast('Could not reach backend. Check if FastAPI is running on port 8000.', 'error');
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+          setIsRefreshing(false);
+        }
+      }
+    }
+
+    loadDashboardRepos();
+    return () => {
+      isMounted = false;
+    };
+  }, [refreshTrigger]);
+
+  const handleManualRefresh = () => {
+    setIsRefreshing(true);
+    setRefreshTrigger((v) => v + 1);
+  };
 
   const handleToggleTask = (taskId) => {
     setTasks((prev) =>
@@ -60,25 +100,49 @@ export default function DashboardPage() {
               : t.status === 'in-progress'
               ? 'pending'
               : 'completed';
+
+          // If we have an active repo, save to localStorage
+          const activeRepo = repos[0];
+          if (activeRepo) {
+            saveTaskStatus(activeRepo.id, taskId, nextStatus);
+          }
           return { ...t, status: nextStatus };
         }
         return t;
       })
     );
-    showToast('Task status updated (demo state).', 'info');
+    showToast('Task status updated.', 'info');
   };
 
-  const filteredRepos = repos.filter((repo) => {
-    const matchesSearch =
-      repo.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      repo.owner.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      repo.language.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || repo.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const activeRepos = demoMode ? sampleRepositories : repos;
+
+  const filteredRepos = useMemo(() => {
+    return activeRepos.filter((repo) => {
+      const matchesSearch =
+        repo.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        repo.owner.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        repo.language.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesStatus = statusFilter === 'all' || repo.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [activeRepos, searchQuery, statusFilter]);
+
+  // Aggregate stats dynamically across active repositories
+  const totalFiles = useMemo(() => {
+    return activeRepos.reduce((acc, r) => acc + (r.stats?.files || 0), 0);
+  }, [activeRepos]);
+
+  const totalModules = useMemo(() => {
+    return activeRepos.reduce((acc, r) => acc + (r.stats?.modules || 0), 0);
+  }, [activeRepos]);
+
+  const totalFunctions = useMemo(() => {
+    return activeRepos.reduce((acc, r) => acc + (r.stats?.functions || 0), 0);
+  }, [activeRepos]);
 
   const completedCount = tasks.filter((t) => t.status === 'completed').length;
-  const progressPercent = Math.round((completedCount / tasks.length) * 100);
+  const progressPercent =
+    tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0;
 
   if (loading) {
     return <LoadingState message="Loading dashboard..." fullPage />;
@@ -102,25 +166,24 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Signature 3D Liquid Chrome Core Visual */}
-        <div className="cv-dashboard-signature-visual" title="CODEVERSE Core · Real-time AST Engine Pulse">
-          <Suspense fallback={<div style={{ width: 68, height: 68 }} />}>
-            <LiquidChromeOrb size={68} label="Liquid Chrome Codebase Core" />
-          </Suspense>
-          <div className="cv-dashboard-signature-info">
-            <span className="cv-dashboard-signature-tag">CORE ACTIVE</span>
-            <span className="cv-dashboard-signature-name">AST Engine</span>
-          </div>
-        </div>
-
         <div className="cv-dashboard-header__actions">
           <Button
             variant="secondary"
             size="md"
-            onClick={() => setSimulateEmpty(!simulateEmpty)}
-            title="Toggle between populated demo data and empty state to test UX"
+            icon={<RefreshCw size={14} className={isRefreshing ? 'cv-icon-spin' : ''} />}
+            onClick={handleManualRefresh}
+            title="Refresh repository list from FastAPI backend"
           >
-            {simulateEmpty ? 'Populated View' : 'Empty State'}
+            Refresh
+          </Button>
+
+          <Button
+            variant="secondary"
+            size="md"
+            onClick={() => setDemoMode(!demoMode)}
+            title="Toggle between live backend data and demo fixtures"
+          >
+            {demoMode ? 'Live Backend Data' : 'Demo Fixtures'}
           </Button>
 
           <Button
@@ -134,11 +197,14 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {/* Demo Disclaimer */}
+      {/* Backend Integration Strip */}
       <div className="cv-dashboard-demo-strip">
         <Info size={14} className="cv-dashboard-demo-strip__icon" />
         <span>
-          <strong>Demo environment:</strong> Repository metrics and AST trees reflect simulated local fixtures.
+          <strong>{demoMode ? 'Demo preview mode:' : 'FastAPI Backend Live:'}</strong>{' '}
+          {demoMode
+            ? 'Viewing sample repository fixtures for UI layout testing.'
+            : 'Displaying real-time AST data from http://localhost:8000/repos.'}
         </span>
       </div>
 
@@ -147,25 +213,25 @@ export default function DashboardPage() {
         <StatCard
           icon={<GitBranch size={18} />}
           label="Connected Repositories"
-          value={simulateEmpty ? 0 : dashboardStats.connectedRepos}
-          sublabel="2 GitHub organizations"
+          value={activeRepos.length}
+          sublabel={`${activeRepos.filter((r) => r.status === 'analyzed').length} fully analyzed`}
         />
         <StatCard
           icon={<Layers size={18} />}
           label="Mapped Modules"
-          value={simulateEmpty ? 0 : dashboardStats.importantModules}
+          value={totalModules}
           sublabel="Across active repositories"
         />
         <StatCard
           icon={<Box size={18} />}
-          label="Indexed Functions"
-          value={simulateEmpty ? 0 : '735'}
-          sublabel="AST syntax nodes"
+          label="Indexed Symbols"
+          value={totalFunctions || totalFiles}
+          sublabel="AST syntax nodes in database"
         />
         <StatCard
           icon={<CheckCircle size={18} />}
           label="Onboarding Progress"
-          value={simulateEmpty ? '0%' : `${progressPercent}%`}
+          value={`${progressPercent}%`}
           sublabel={`${completedCount} of ${tasks.length} tasks ready`}
         />
       </section>
@@ -180,7 +246,7 @@ export default function DashboardPage() {
               <p className="cv-section-desc">Select a repository to explore structure and dependency paths.</p>
             </div>
 
-            {!simulateEmpty && (
+            {activeRepos.length > 0 && (
               <div className="cv-dashboard-controls">
                 <SearchInput
                   value={searchQuery}
@@ -199,23 +265,23 @@ export default function DashboardPage() {
                     <option value="all">All</option>
                     <option value="analyzed">Analyzed</option>
                     <option value="analyzing">Analyzing</option>
-                    <option value="connected">Connected</option>
+                    <option value="pending">Queued</option>
                   </select>
                 </div>
               </div>
             )}
           </div>
 
-          {simulateEmpty || filteredRepos.length === 0 ? (
+          {filteredRepos.length === 0 ? (
             <EmptyState
-              title={simulateEmpty ? 'No Repositories Connected' : 'No matching repositories'}
+              title={activeRepos.length === 0 ? 'No Repositories Connected' : 'No matching repositories'}
               description={
-                simulateEmpty
+                activeRepos.length === 0
                   ? 'Connect your first GitHub repository to parse directory hierarchies and generate onboarding paths.'
                   : `No repositories matched "${searchQuery}". Clear your search query to see all repositories.`
               }
-              actionLabel={simulateEmpty ? 'Connect Repository' : 'Clear Filter'}
-              onAction={() => (simulateEmpty ? navigate('/connect') : setSearchQuery(''))}
+              actionLabel={activeRepos.length === 0 ? 'Connect Repository' : 'Clear Filter'}
+              onAction={() => (activeRepos.length === 0 ? navigate('/connect') : setSearchQuery(''))}
             />
           ) : (
             <div className="cv-dashboard-repo-cards">
